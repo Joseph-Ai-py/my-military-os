@@ -40,6 +40,141 @@ const createElement = (tag, classNames = '', textContent = '') => {
 };
 
 /**
+ * 전역 네비게이션
+ * Desktop: 그룹형 사이드바
+ * Mobile: 하단 스크롤 탭
+ */
+const NAV_ITEMS = [
+    { route: '#/', label: 'MAIN', icon: '⌂', section: '핵심' },
+    { route: '#/military', label: '군생활', icon: '🪖', section: '핵심' },
+    { route: '#/growth', label: '성장', icon: '🌱', section: '성장' },
+    { route: '#/projects', label: '프로젝트', icon: '🚀', section: '성장' },
+    { route: '#/content', label: '콘텐츠', icon: '📱', section: '성장' },
+    { route: '#/finance', label: '자산관리', icon: '₩', section: '자산' },
+    { route: '#/settings', label: '설정', icon: '⚙', section: '시스템' }
+];
+
+const createNavLink = (item) => {
+    const link = createElement('a', 'nav-link');
+
+    link.href = item.route;
+    link.dataset.route = item.route;
+    link.setAttribute('aria-label', item.label);
+
+    const icon = createElement(
+        'span',
+        'nav-link-icon',
+        item.icon
+    );
+
+    icon.setAttribute('aria-hidden', 'true');
+
+    const label = createElement(
+        'span',
+        'nav-link-label',
+        item.label
+    );
+
+    link.appendChild(icon);
+    link.appendChild(label);
+
+    return link;
+};
+
+const renderNavigation = () => {
+    const sidebar = document.getElementById('sidebar-nav');
+    const bottom = document.getElementById('bottom-nav');
+
+    if (sidebar) {
+        sidebar.innerHTML = '';
+
+        const groups = [];
+
+        NAV_ITEMS.forEach(item => {
+            const last = groups[groups.length - 1];
+
+            if (!last || last.section !== item.section) {
+                groups.push({
+                    section: item.section,
+                    items: [item]
+                });
+            } else {
+                last.items.push(item);
+            }
+        });
+
+        groups.forEach(group => {
+            const section = createElement(
+                'div',
+                'nav-section'
+            );
+
+            section.appendChild(
+                createElement(
+                    'div',
+                    'nav-section-title',
+                    group.section
+                )
+            );
+
+            group.items.forEach(item => {
+                section.appendChild(
+                    createNavLink(item)
+                );
+            });
+
+            sidebar.appendChild(section);
+        });
+    }
+
+    if (bottom) {
+        bottom.innerHTML = '';
+
+        NAV_ITEMS.forEach(item => {
+            bottom.appendChild(
+                createNavLink(item)
+            );
+        });
+    }
+};
+
+const updateNavigationState = (route) => {
+    const current = route || Router.getCurrentRoute();
+
+    document.querySelectorAll('[data-route]').forEach(link => {
+        const active =
+            link.getAttribute('data-route') === current;
+
+        link.classList.toggle('active', active);
+
+        if (active) {
+            link.setAttribute(
+                'aria-current',
+                'page'
+            );
+        } else {
+            link.removeAttribute(
+                'aria-current'
+            );
+        }
+    });
+
+    const headerTitle =
+        document.getElementById('header-title');
+
+    if (headerTitle) {
+        const currentItem = NAV_ITEMS.find(
+            item => item.route === current
+        );
+
+        headerTitle.textContent =
+            currentItem
+                ? currentItem.label
+                : 'MY MILITARY OS';
+    }
+};
+
+/**
  * 메인 대시보드 뷰 렌더링
  */
 const renderDashboardView = () => {
@@ -420,74 +555,500 @@ const initRoutes = () => {
 
     // 설정 (/settings)
     Router.registerRoute('#/settings', () => {
-        const container = createElement('div', '', '');
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.gap = 'var(--spacing-4)';
+        const container = createElement(
+            'div',
+            'settings-page'
+        );
 
-        container.appendChild(createElement('h2', 'section-title', '시스템 설정 및 데이터 관리'));
+        const header =
+            createElement(
+                'div',
+                'page-header'
+            );
 
-        const backupCardContent = createElement('div');
-        backupCardContent.appendChild(createElement('p', '', '모든 데이터를 안전하게 JSON 파일로 백업하거나 복원할 수 있습니다.'));
-        
-        const btnGroup = createElement('div');
-        btnGroup.style.display = 'flex';
-        btnGroup.style.gap = 'var(--spacing-3)';
-        btnGroup.style.marginTop = 'var(--spacing-3)';
+        const headingWrap =
+            createElement('div');
 
-        const exportBtn = createElement('button', 'btn btn-primary', '데이터 백업 (JSON Export)');
-        exportBtn.addEventListener('click', () => {
-            Storage.exportToJson();
-            Toast.showToast('데이터 백업 파일이 다운로드되었습니다.', 'success');
-        });
+        headingWrap.appendChild(
+            createElement(
+                'h2',
+                'section-title',
+                '설정'
+            )
+        );
 
-        const importInput = createElement('input', '', '');
-        importInput.type = 'file';
-        importInput.accept = '.json';
-        importInput.style.display = 'none';
+        headingWrap.appendChild(
+            createElement(
+                'p',
+                'page-description',
+                '복무 기준과 앱 동작에 필요한 값을 한 곳에서 관리합니다.'
+            )
+        );
 
-        const importBtn = createElement('button', 'btn btn-outline', '데이터 복원 (JSON Import)');
-        importBtn.addEventListener('click', () => importInput.click());
+        header.appendChild(headingWrap);
+        container.appendChild(header);
 
-        importInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            try {
-                await Storage.importFromJson(file);
-                Toast.showToast('데이터가 성공적으로 복원되었습니다.', 'success');
-                setTimeout(() => window.location.reload(), 1000);
-            } catch (err) {
-                Toast.showToast('데이터 복원에 실패했습니다. 파일 형식을 확인하세요.', 'error');
+        const buildField = (
+            label,
+            key,
+            type = 'text',
+            options = {}
+        ) => {
+            const group =
+                createElement(
+                    'div',
+                    'form-group settings-field'
+                );
+
+            const labelEl =
+                createElement(
+                    'label',
+                    'form-label',
+                    label
+                );
+
+            const input =
+                type === 'select'
+                    ? createElement(
+                        'select',
+                        'select'
+                    )
+                    : createElement(
+                        'input',
+                        'input'
+                    );
+
+            input.name = key;
+            input.dataset.settingKey = key;
+
+            if (type === 'select') {
+                (options.choices || []).forEach(choice => {
+                    const option =
+                        createElement(
+                            'option',
+                            '',
+                            choice
+                        );
+
+                    option.value = choice;
+                    input.appendChild(option);
+                });
+            } else {
+                input.type = type;
+
+                if (options.min !== undefined) {
+                    input.min =
+                        String(options.min);
+                }
+
+                if (options.step !== undefined) {
+                    input.step =
+                        String(options.step);
+                }
             }
-        });
+
+            const value =
+                Settings.getSetting(key);
+
+            if (
+                value !== undefined &&
+                value !== null
+            ) {
+                input.value = String(value);
+            }
+
+            group.appendChild(labelEl);
+            group.appendChild(input);
+
+            if (options.help) {
+                group.appendChild(
+                    createElement(
+                        'div',
+                        'field-help',
+                        options.help
+                    )
+                );
+            }
+
+            return group;
+        };
+
+        const serviceGrid =
+            createElement(
+                'div',
+                'settings-grid'
+            );
+
+        serviceGrid.appendChild(
+            buildField(
+                '입대일',
+                'enlistmentDate',
+                'date',
+                {
+                    help:
+                        '복무 D+ 및 진행률 계산에 사용합니다.'
+                }
+            )
+        );
+
+        serviceGrid.appendChild(
+            buildField(
+                '전역예정일',
+                'dischargeDate',
+                'date',
+                {
+                    help:
+                        '복무 D- 및 진행률 계산에 사용합니다.'
+                }
+            )
+        );
+
+        serviceGrid.appendChild(
+            buildField(
+                '현재 계급',
+                'currentRank',
+                'select',
+                {
+                    choices: [
+                        '이병',
+                        '일병',
+                        '상병',
+                        '병장'
+                    ]
+                }
+            )
+        );
+
+        const rewardGrid =
+            createElement(
+                'div',
+                'settings-grid'
+            );
+
+        rewardGrid.appendChild(
+            buildField(
+                '상점 → 휴가 교환 기준',
+                'meritExchangeRate',
+                'number',
+                {
+                    min: 1,
+                    step: 1,
+                    help:
+                        '예: 50점 = 휴가 1일'
+                }
+            )
+        );
+
+        rewardGrid.appendChild(
+            buildField(
+                '종교 → 휴가 교환 기준',
+                'religionExchangeRate',
+                'number',
+                {
+                    min: 1,
+                    step: 1,
+                    help:
+                        '예: 20회 = 종교휴가 1일'
+                }
+            )
+        );
+
+        rewardGrid.appendChild(
+            buildField(
+                '포상휴가 최대',
+                'maxRewardVacation',
+                'number',
+                {
+                    min: 0,
+                    step: 1,
+                    help:
+                        '포상휴가 보유 상한입니다.'
+                }
+            )
+        );
+
+        rewardGrid.appendChild(
+            buildField(
+                '시간외 → 전투휴무 기준',
+                'overtimeToRestRate',
+                'number',
+                {
+                    min: 1,
+                    step: 1,
+                    help:
+                        '부대 기준에 맞게 입력합니다.'
+                }
+            )
+        );
+
+        rewardGrid.appendChild(
+            buildField(
+                '훈련 → 전투휴무 기준',
+                'trainingToRestRate',
+                'number',
+                {
+                    min: 1,
+                    step: 1,
+                    help:
+                        '부대 기준에 맞게 입력합니다.'
+                }
+            )
+        );
+
+        const saveButton =
+            createElement(
+                'button',
+                'btn btn-primary',
+                '설정 저장'
+            );
+
+        saveButton.addEventListener(
+            'click',
+            () => {
+                const values =
+                    [
+                        ...container.querySelectorAll(
+                            '[data-setting-key]'
+                        )
+                    ].map(input => ({
+                        key:
+                            input.dataset.settingKey,
+                        type:
+                            input.type,
+                        value:
+                            input.value
+                    }));
+
+                let saved = 0;
+
+                values.forEach(item => {
+                    let value = item.value;
+
+                    if (item.type === 'number') {
+                        const parsed =
+                            Number(item.value);
+
+                        if (
+                            !Number.isFinite(parsed) ||
+                            parsed < 0
+                        ) {
+                            return;
+                        }
+
+                        value = parsed;
+                    }
+
+                    Settings.setSetting(
+                        item.key,
+                        value
+                    );
+
+                    saved += 1;
+                });
+
+                Toast.showToast(
+                    `설정 ${saved}개가 저장되었습니다.`,
+                    'success'
+                );
+            }
+        );
+
+        const saveArea =
+            createElement(
+                'div',
+                'settings-actions'
+            );
+
+        saveArea.appendChild(saveButton);
+
+        saveArea.appendChild(
+            createElement(
+                'span',
+                'field-help',
+                '입력값은 브라우저 LocalStorage에 저장됩니다.'
+            )
+        );
+
+        container.appendChild(
+            Card.renderCard({
+                title: '복무 정보',
+                content: serviceGrid
+            })
+        );
+
+        container.appendChild(
+            Card.renderCard({
+                title: '보상 및 전투휴무 기준',
+                content: rewardGrid
+            })
+        );
+
+        container.appendChild(
+            Card.renderCard({
+                title: '설정 저장',
+                content: saveArea
+            })
+        );
+
+        const backupCardContent =
+            createElement('div');
+
+        backupCardContent.appendChild(
+            createElement(
+                'p',
+                '',
+                '원본 데이터를 JSON으로 백업하거나 복원할 수 있습니다.'
+            )
+        );
+
+        const btnGroup =
+            createElement(
+                'div',
+                'settings-actions'
+            );
+
+        const exportBtn =
+            createElement(
+                'button',
+                'btn btn-outline',
+                '데이터 백업'
+            );
+
+        exportBtn.addEventListener(
+            'click',
+            () => {
+                Storage.exportToJson();
+
+                Toast.showToast(
+                    '데이터 백업 파일이 다운로드되었습니다.',
+                    'success'
+                );
+            }
+        );
+
+        const importInput =
+            createElement('input');
+
+        importInput.type = 'file';
+        importInput.accept =
+            '.json,application/json';
+        importInput.style.display =
+            'none';
+
+        const importBtn =
+            createElement(
+                'button',
+                'btn btn-outline',
+                '데이터 복원'
+            );
+
+        importBtn.addEventListener(
+            'click',
+            () => importInput.click()
+        );
+
+        importInput.addEventListener(
+            'change',
+            async event => {
+                const file =
+                    event.target.files?.[0];
+
+                if (!file) {
+                    return;
+                }
+
+                try {
+                    await Storage.importFromJson(
+                        file
+                    );
+
+                    Toast.showToast(
+                        '데이터가 복원되었습니다.',
+                        'success'
+                    );
+
+                    setTimeout(
+                        () => window.location.reload(),
+                        400
+                    );
+                } catch (error) {
+                    console.error(
+                        '[Settings] Import failed:',
+                        error
+                    );
+
+                    Toast.showToast(
+                        '데이터 복원에 실패했습니다. JSON 형식을 확인하세요.',
+                        'error'
+                    );
+                } finally {
+                    importInput.value = '';
+                }
+            }
+        );
 
         btnGroup.appendChild(exportBtn);
         btnGroup.appendChild(importBtn);
         btnGroup.appendChild(importInput);
-        backupCardContent.appendChild(btnGroup);
 
-        container.appendChild(Card.renderCard({ title: '데이터 백업 및 복원', content: backupCardContent }));
+        backupCardContent.appendChild(
+            btnGroup
+        );
+
+        container.appendChild(
+            Card.renderCard({
+                title: '데이터 백업 및 복원',
+                content: backupCardContent
+            })
+        );
+
         setView(container);
     });
-};
 
 /**
  * 네비게이션 및 UI 이벤트 바인딩
  */
 const initEventListeners = () => {
-    // 1. Sidebar 및 Mobile Bottom Nav 링크 연결
-    document.querySelectorAll('[data-route]').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            const route = el.getAttribute('data-route');
+    // 네비게이션은 이벤트 위임으로 처리합니다.
+    document.addEventListener(
+        'click',
+        event => {
+            const link =
+                event.target.closest('[data-route]');
+
+            if (!link) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const route =
+                link.getAttribute('data-route');
+
             if (route) {
                 Router.navigate(route);
-                // 모바일 내비게이션 활성화 상태 동기화
-                document.querySelectorAll('[data-route]').forEach(n => n.classList.remove('active'));
-                el.classList.add('active');
             }
-        });
+        }
+    );
+
+    // 라우트 변경 시 메뉴와 모바일 헤더를 동기화합니다.
+    Router.onRouteChange(
+        updateNavigationState
+    );
+
+    // Quick Add 시스템 초기화
+    QuickAdd.init();
+
+    // Database 변경 시 현재 화면을 다시 렌더링합니다.
+    Database.subscribe(() => {
+        const handler =
+            Router.getHandler();
+
+        if (typeof handler === 'function') {
+            handler();
+        }
     });
+};
 
     // 2. Quick Add 시스템 초기화
     QuickAdd.init();
@@ -509,19 +1070,24 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         // 1. LocalStorage 데이터 로드 및 Store 초기화
         Storage.init();
-
-        // 2. 라우터 및 뷰 등록
+        // 2. 네비게이션 및 뷰 등록
+        renderNavigation();
         initRoutes();
-
         // 3. 이벤트 리스너(네비게이션, 퀵애드 등) 연결
         initEventListeners();
-
         // 4. 라우터 시작 (GitHub Pages Hash Routing)
         Router.init();
-
-        console.info('[MY MILITARY OS] Successfully initialized.');
+        console.info(
+            '[MY MILITARY OS] Successfully initialized.'
+        );
     } catch (err) {
-        console.error('[MY MILITARY OS Initialization Error]', err);
-        Toast.showToast('애플리케이션 초기화 중 오류가 발생했습니다.', 'error');
+        console.error(
+            '[MY MILITARY OS Initialization Error]',
+            err
+        );
+        Toast.showToast(
+            '애플리케이션 초기화 중 오류가 발생했습니다.',
+            'error'
+        );
     }
 });
