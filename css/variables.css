@@ -1,0 +1,72 @@
+:root {
+    /* Base Colors (Dark Mode Default - Modern SaaS) */
+    --color-background: #0f1115;
+    --color-surface: #1a1d24;
+    --color-surface-alt: #232730;
+    --color-border: #333842;
+    
+    /* Typography Colors */
+    --color-text: #f3f4f6;
+    --color-text-muted: #9ca3af;
+    
+    /* State & Intent Colors */
+    --color-accent: #3b82f6;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #0ea5e9;
+
+    /* Category System Colors */
+    --color-cat-urgent: #ef4444;    
+    --color-cat-work: #f97316;      
+    --color-cat-study: #eab308;     
+    --color-cat-health: #84cc16;    
+    --color-cat-finance: #22c55e;   
+    --color-cat-personal: #38bdf8;  
+    --color-cat-travel: #3b82f6;    
+    --color-cat-event: #a855f7;     
+    --color-cat-hobby: #ec4899;     
+    --color-cat-other: #64748b;     
+    
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+    
+    /* Shadows (Adapted for dark backgrounds) */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    
+    /* Spacing */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
+    
+    /* Font Sizes */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    
+    /* Layout Dimensions */
+    --sidebar-width: 260px;
+    --bottom-nav-height: 64px;
+    --header-height: 56px;
+    
+    /* Transitions */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}

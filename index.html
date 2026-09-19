@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MY MILITARY OS</title>
+    
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/variables.css">
+    <link rel="stylesheet" href="./css/layout.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <link rel="stylesheet" href="./css/responsive.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+        <!-- Desktop Sidebar -->
+        <aside id="desktop-sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="brand-title">MY MILITARY OS</h1>
+            </div>
+            <nav id="sidebar-nav" class="sidebar-nav" aria-label="데스크톱 네비게이션">
+                <!-- Navigation items will be mounted here by JS -->
+            </nav>
+        </aside>
+
+        <!-- Main Workspace Wrapper -->
+        <div id="workspace" class="workspace">
+            <!-- Mobile Header -->
+            <header id="mobile-header" class="mobile-header">
+                <h1 id="header-title" class="header-title">대시보드</h1>
+                <button id="mobile-search-btn" class="icon-btn search-toggle" aria-label="검색">
+                    <span aria-hidden="true">🔍</span>
+                </button>
+            </header>
+
+            <!-- Main Content Area -->
+            <main id="main-content" class="main-content">
+                <!-- Views (Dashboard, Schedule, Projects, etc.) will be mounted here by JS -->
+            </main>
+
+            <!-- Mobile Bottom Navigation -->
+            <nav id="bottom-nav" class="bottom-nav" aria-label="모바일 네비게이션">
+                <!-- Bottom tabs will be mounted here by JS -->
+            </nav>
+        </div>
+    </div>
+
+    <!-- Floating Action Button (Quick Add) -->
+    <button id="quick-add-fab" class="fab quick-add-btn" aria-label="빠른 추가">
+        <span aria-hidden="true">＋</span>
+    </button>
+
+    <!-- Global Search Area -->
+    <div id="global-search-container" class="global-search-overlay hidden" aria-hidden="true">
+        <!-- Search UI will be mounted here by JS -->
+    </div>
+
+    <!-- Portals / Roots -->
+    <div id="modal-root" class="modal-root"></div>
+    <div id="toast-root" class="toast-root"></div>
+
+    <!-- Application Entry Point -->
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
