@@ -1050,19 +1050,6 @@ const initEventListeners = () => {
     });
 };
 
-    // 2. Quick Add 시스템 초기화
-    QuickAdd.init();
-
-    // 3. Database 변경 구독 (Store 변경 시 화면 자동 갱신 등 Single Source of Truth 보장)
-    Database.subscribe(() => {
-    const handler = Router.getHandler();
-
-    if (typeof handler === 'function') {
-        handler();
-    }
-});
-};
-
 /**
  * 앱 전역 초기화 실행
  */
