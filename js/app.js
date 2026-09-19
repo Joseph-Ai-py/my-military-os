@@ -1004,6 +1004,7 @@ const initRoutes = () => {
 
         setView(container);
     });
+};
 
 /**
  * 네비게이션 및 UI 이벤트 바인딩
