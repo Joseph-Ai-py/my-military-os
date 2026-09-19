@@ -159,32 +159,42 @@ export const Calendar = {
                     let prefix = '';
                     let color = '';
                     
-                    switch(evt.type) {
+                    switch (evt.type) {
+                        case '휴가 출발':
                         case '휴가출발':
                             prefix = '-';
                             break;
+
+                        case '휴가 복귀':
                         case '휴가복귀':
                             prefix = '-';
-                            color = 'var(--color-accent)'; // 파란색 계열
+                            color = 'var(--color-info)';
                             break;
+
                         case '당직':
                             prefix = 'O';
                             break;
+
                         case '외박':
                             prefix = '♥';
                             color = 'var(--color-danger)';
                             break;
+
                         case '외출':
                             prefix = '🚶';
                             break;
+
                         case '외진':
                             prefix = '🏥';
                             break;
-                        case '훈련':
+
+                        case '훈련': {
                             const trainingSize =
                                 evt.trainingSize ||
                                 evt.scale ||
                                 '';
+
+                            let scaleTxt = '';
 
                             if (
                                 trainingSize === '큰 훈련' ||
@@ -199,8 +209,11 @@ export const Calendar = {
                             ) {
                                 scaleTxt = '(소)';
                             }
+
                             prefix = `🏋️${scaleTxt}`;
                             break;
+                        }
+
                         default:
                             prefix = '•';
                     }

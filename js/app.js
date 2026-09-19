@@ -127,21 +127,6 @@ const renderDashboardView = () => {
     }
 
     statsGrid.appendChild(serviceCard);
-    const now = new Date();
-    const enlistment = new Date(enlistmentDateStr);
-    const discharge = new Date(dischargeDateStr);
-    
-    const diffTime = now - enlistment;
-    const passedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const totalServiceTime = discharge - enlistment;
-    const progressService = totalServiceTime > 0 ? Math.min(Math.max(Math.round((diffTime / totalServiceTime) * 100), 0), 100) : 0;
-
-    statsGrid.appendChild(Card.renderStatCard({
-        label: '복무 진행률 (D+)',
-        value: `D+${passedDays} (${progressService}%)`,
-        trend: `전역일: ${dischargeDateStr}`,
-        isPositive: true
-    }));
 
     // 군 보상 자산 요약
     const militaryAssets = Rewards.calculateMilitaryAssets();
