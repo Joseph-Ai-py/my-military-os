@@ -66,21 +66,78 @@ export const Finance = {
      * @returns {Object} 생성된 거래 객체
      */
     createTransaction(data) {
-        const newTransaction = {
-            title: data.title || '새 거래',
-            date: data.date || getTodayString(),
-            amount: Number(data.amount) || 0,
-            type: data.type || '지출', // 수입, 지출, 저축, 투자, 이체
-            categoryId: data.categoryId || null,
-            assetId: data.assetId || null,
-            budgetId: data.budgetId || null,
-            goalId: data.goalId || null,
-            fixedExpense: !!data.fixedExpense, // 고정지출 여부
-            memo: data.memo || ''
-        };
+    let categoryId =
+        data.categoryId || null;
 
-        return Database.add(COLLECTION, newTransaction);
-    },
+    // 기존 category 문자열 호환
+    if (!categoryId && data.category) {
+        const categories =
+            Database.get('categories');
+
+        const normalizedName =
+            String(data.category).trim();
+
+        let category =
+            categories.find(
+                item =>
+                    item.name === normalizedName ||
+                    item.title === normalizedName ||
+                    item.categoryName === normalizedName
+            );
+
+        // 없으면 자동 생성
+        if (!category) {
+            category =
+                Database.add(
+                    'categories',
+                    {
+                        name: normalizedName,
+                        type: '지출',
+                        defaultBudget: 0,
+                        description: ''
+                    }
+                );
+        }
+
+        categoryId = category.id;
+    }
+
+    const newTransaction = {
+        title:
+            data.title || '새 거래',
+
+        date:
+            data.date || getTodayString(),
+
+        amount:
+            Number(data.amount) || 0,
+
+        type:
+            data.type || '지출',
+
+        categoryId,
+
+        assetId:
+            data.assetId || null,
+
+        budgetId:
+            data.budgetId || null,
+
+        goalId:
+            data.goalId || null,
+
+        fixedExpense:
+            Boolean(data.fixedExpense),
+
+        memo:
+            data.memo || ''
+    };
+
+    return Database.add(
+        COLLECTION,
+        newTransaction
+    );
+},
 
     /**
      * 기존 거래 내역을 업데이트합니다.

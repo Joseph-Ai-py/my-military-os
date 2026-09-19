@@ -1,14 +1,20 @@
 /**
  * MY MILITARY OS
- * Storage Module (LocalStorage & JSON Export/Import)
+ * Storage Module
+ *
+ * 책임:
+ * - LocalStorage load/save
+ * - Database 초기화
+ * - 자동 저장
+ * - JSON Export / Import
+ * - 기존 storage key 마이그레이션
  */
 
-const STORAGE_KEY = 'my-military-os-store';
+import { Database } from './database.js';
 
-/**
- * 기본 스토어 구조를 반환하는 헬퍼 함수
- * 데이터가 없거나 손상되었을 때 안전한 기본값을 제공합니다.
- */
+const STORAGE_KEY = 'MY_MILITARY_OS_DB';
+const LEGACY_STORAGE_KEY = 'my-military-os-store';
+
 const getDefaultStore = () => ({
     settings: [],
     schedules: [],
@@ -26,144 +32,187 @@ const getDefaultStore = () => ({
     monthlyReports: []
 });
 
+const normalizeStore = (data) => {
+    const defaults = getDefaultStore();
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return defaults;
+    }
+
+    const normalized = {};
+
+    Object.keys(defaults).forEach((collection) => {
+        normalized[collection] = Array.isArray(data[collection])
+            ? data[collection]
+            : [];
+    });
+
+    return normalized;
+};
+
+const readRawStore = () => {
+    try {
+        const current = localStorage.getItem(STORAGE_KEY);
+
+        if (current) {
+            return JSON.parse(current);
+        }
+
+        // 기존 버전 데이터 마이그레이션
+        const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+
+        if (legacy) {
+            const parsedLegacy = JSON.parse(legacy);
+
+            // 새 키로 이전
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(parsedLegacy)
+            );
+
+            return parsedLegacy;
+        }
+
+        return getDefaultStore();
+    } catch (error) {
+        console.error('[Storage] load failed:', error);
+        return getDefaultStore();
+    }
+};
+
 export const Storage = {
     /**
-     * LocalStorage에서 스토어 데이터를 불러옵니다.
-     * @returns {Object} 파싱된 스토어 데이터 또는 기본 스토어 데이터
+     * 앱 시작 시 한 번 호출
      */
-    loadStore() {
-        try {
-            const serializedData = localStorage.getItem(STORAGE_KEY);
-            if (!serializedData) {
-                return getDefaultStore();
-            }
+    init() {
+        const loadedStore = this.loadStore();
 
-            const parsedData = JSON.parse(serializedData);
-            
-            // 기존 데이터 구조에 없는 새로운 키가 있을 수 있으므로 기본 스토어와 병합
-            return {
-                ...getDefaultStore(),
-                ...parsedData
-            };
-        } catch (error) {
-            console.error('[Storage Error] Failed to load store from LocalStorage:', error);
-            return getDefaultStore();
-        }
+        Database.replaceAll(loadedStore);
+
+        // 이후 모든 Database 변경을 자동 저장
+        Database.subscribe((store) => {
+            this.saveStore(store);
+        });
+
+        // 초기 상태도 한 번 저장
+        this.saveStore(Database.getAll());
+
+        return Database.getAll();
     },
 
     /**
-     * 스토어 데이터를 LocalStorage에 저장합니다.
-     * @param {Object} storeData 저장할 스토어 객체
-     * @returns {boolean} 저장 성공 여부
+     * LocalStorage → Store
+     */
+    loadStore() {
+        return normalizeStore(readRawStore());
+    },
+
+    /**
+     * Store → LocalStorage
      */
     saveStore(storeData) {
         try {
-            const serializedData = JSON.stringify(storeData);
-            localStorage.setItem(STORAGE_KEY, serializedData);
+            const normalized = normalizeStore(storeData);
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(normalized)
+            );
+
             return true;
         } catch (error) {
-            console.error('[Storage Error] Failed to save store to LocalStorage:', error);
+            console.error('[Storage] save failed:', error);
             return false;
         }
     },
 
-    /**
-     * LocalStorage의 데이터를 모두 초기화합니다.
-     * @returns {boolean} 성공 여부
-     */
     clearStore() {
         try {
             localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(LEGACY_STORAGE_KEY);
+
+            Database.replaceAll(getDefaultStore());
+
             return true;
         } catch (error) {
-            console.error('[Storage Error] Failed to clear LocalStorage:', error);
+            console.error('[Storage] clear failed:', error);
             return false;
         }
     },
 
-    /**
-     * 백업 파일 이름을 생성합니다. (예: my-military-os-backup-20231025-143000.json)
-     * @returns {string} 파일 이름
-     */
     createBackupFileName() {
         const now = new Date();
+
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
 
-        return `my-military-os-backup-${year}${month}${day}-${hours}${minutes}${seconds}.json`;
+        return `MY_MILITARY_OS_backup_${year}-${month}-${day}.json`;
     },
 
     /**
-     * 스토어 데이터를 JSON 파일로 다운로드합니다.
-     * @param {Object} storeData 내보낼 스토어 데이터
+     * Store 전체 Export
      */
-    exportStore(storeData) {
+    exportStore(storeData = Database.getAll()) {
         try {
-            const dataString = JSON.stringify(storeData, null, 2);
-            const blob = new Blob([dataString], { type: 'application/json' });
+            const json = JSON.stringify(storeData, null, 2);
+
+            const blob = new Blob([json], {
+                type: 'application/json'
+            });
+
             const url = URL.createObjectURL(blob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = this.createBackupFileName();
-            
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            
-            // 정리 작업
+
+            const anchor = document.createElement('a');
+
+            anchor.href = url;
+            anchor.download = this.createBackupFileName();
+
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+
             setTimeout(() => {
-                document.body.removeChild(downloadLink);
                 URL.revokeObjectURL(url);
             }, 100);
-            
+
             return true;
         } catch (error) {
-            console.error('[Storage Error] Failed to export store to JSON:', error);
+            console.error('[Storage] export failed:', error);
             return false;
         }
     },
 
     /**
-     * JSON 문자열을 검증하고 스토어 객체로 변환합니다.
-     * @param {string} jsonString Import할 JSON 문자열
-     * @returns {Object} 검증 및 파싱된 스토어 객체
-     * @throws {Error} 형식이 잘못되었을 경우 에러 발생
+     * 기존 app.js 호환용 API
+     */
+    exportToJson() {
+        return this.exportStore(Database.getAll());
+    },
+
+    /**
+     * JSON 문자열 → Store
      */
     importStore(jsonString) {
-        try {
-            const parsedData = JSON.parse(jsonString);
+        const parsed = JSON.parse(jsonString);
 
-            if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData)) {
-                throw new Error('Invalid backup file format: Root must be an object.');
-            }
+        const normalized = normalizeStore(parsed);
 
-            const defaultStore = getDefaultStore();
-            const validKeys = Object.keys(defaultStore);
-            
-            // 유효한 컬렉션 키가 하나라도 있는지 확인 (최소한의 구조 검증)
-            const hasValidStructure = validKeys.some(key => Array.isArray(parsedData[key]));
-            
-            if (!hasValidStructure) {
-                throw new Error('Invalid backup file format: Missing required collections.');
-            }
+        Database.replaceAll(normalized);
 
-            // 기본 스토어 구조를 바탕으로 안전하게 데이터 병합 (배열인 것만 허용)
-            const importedStore = { ...defaultStore };
-            
-            validKeys.forEach(key => {
-                if (Array.isArray(parsedData[key])) {
-                    importedStore[key] = parsedData[key];
-                }
-            });
+        return normalized;
+    },
 
-            return importedStore;
-        } catch (error) {
-            console.error('[Storage Error] Failed to import store:', error);
-            throw error;
+    /**
+     * File 객체 → Store
+     */
+    async importFromJson(file) {
+        if (!(file instanceof File)) {
+            throw new Error('유효한 JSON 파일이 아닙니다.');
         }
+
+        const text = await file.text();
+
+        return this.importStore(text);
     }
 };

@@ -18,6 +18,10 @@ export const Router = {
         routes.set(path, handler);
     },
 
+    getHandler(path = this.getCurrentRoute()) {
+    return routes.get(path) || null;
+    },
+
     /**
      * 지정한 경로로 이동합니다 (Hash 변경).
      * @param {string} path 이동할 경로

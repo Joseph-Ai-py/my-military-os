@@ -61,8 +61,72 @@ const renderDashboardView = () => {
     statsGrid.style.gap = 'var(--spacing-4)';
 
     // 복무 D-Day 계산 (Settings에서 입대일/전역일 연동 가정 또는 기본값)
-    const enlistmentDateStr = Settings.get('enlistmentDate') || '2026-06-01';
-    const dischargeDateStr = Settings.get('dischargeDate') || '2027-11-30';
+    const enlistmentDateStr =
+    Settings.getDateSetting('enlistmentDate');
+    const dischargeDateStr =
+        Settings.getDateSetting('dischargeDate');
+    const serviceCard = createElement(
+        'div',
+        'service-progress-card'
+    );
+    if (!enlistmentDateStr || !dischargeDateStr) {
+        serviceCard.appendChild(
+            Card.renderStatCard({
+                label: '복무 정보',
+                value: '설정 필요',
+                trend: '설정에서 입대일과 전역예정일을 입력하세요.',
+                isPositive: false
+            })
+        );
+    } else {
+        const now = new Date();
+        const enlistment = new Date(
+            `${enlistmentDateStr}T00:00:00`
+        );
+        const discharge = new Date(
+            `${dischargeDateStr}T00:00:00`
+        );
+        const totalDays = Math.max(
+            1,
+            Math.ceil(
+                (discharge - enlistment) /
+                (1000 * 60 * 60 * 24)
+            )
+        );
+        const passedDays = Math.max(
+            0,
+            Math.floor(
+                (now - enlistment) /
+                (1000 * 60 * 60 * 24)
+            )
+        );
+        const remainingDays = Math.max(
+            0,
+            Math.ceil(
+                (discharge - now) /
+                (1000 * 60 * 60 * 24)
+            )
+        );
+        const progress = Math.min(
+            100,
+            Math.max(
+                0,
+                Math.round(
+                    (passedDays / totalDays) * 100
+                )
+            )
+        );
+        serviceCard.appendChild(
+            Card.renderStatCard({
+                label: '복무 진행률',
+                value: `D+${passedDays}`,
+                trend: `D-${remainingDays} · ${progress}%`,
+                isPositive: true
+            })
+        );
+    }
+
+    statsGrid.appendChild(serviceCard);
     const now = new Date();
     const enlistment = new Date(enlistmentDateStr);
     const discharge = new Date(dischargeDateStr);
@@ -230,7 +294,7 @@ const renderDashboardView = () => {
  * 각 라우트별 뷰 렌더러 등록
  */
 const initRoutes = () => {
-    const appRoot = document.getElementById('app-root');
+    const appRoot = document.getElementById('main-content');
 
     const setView = (element) => {
         if (!appRoot) return;
@@ -445,13 +509,12 @@ const initEventListeners = () => {
 
     // 3. Database 변경 구독 (Store 변경 시 화면 자동 갱신 등 Single Source of Truth 보장)
     Database.subscribe(() => {
-        // 현재 라우트 핸들러 재실행으로 실시간 반영
-        const current = Router.getCurrentRoute();
-        const handler = Router.routes ? Router.routes.get(current) : null;
-        if (typeof handler === 'function') {
-            handler();
-        }
-    });
+    const handler = Router.getHandler();
+
+    if (typeof handler === 'function') {
+        handler();
+    }
+});
 };
 
 /**

@@ -29,6 +29,11 @@ export const Settings = {
      * @param {string} key 설정 키
      * @returns {*} 설정 값
      */
+    
+    get(key) {
+    return this.getSetting(key);
+    },
+
     getSetting(key) {
         const record = Database.find('settings', key);
         if (record !== null && record.value !== undefined && record.value !== '') {

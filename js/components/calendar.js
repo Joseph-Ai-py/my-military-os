@@ -134,7 +134,25 @@ export const Calendar = {
                 cell.appendChild(dateEl);
 
                 // 해당 날짜의 일정 렌더링
-                const dayEvents = schedules.filter(s => s.date === cellDateStr);
+                const dayEvents = schedules.filter((schedule) => {
+                    const startDate =
+                        schedule.startDate ||
+                        schedule.date ||
+                        '';
+
+                    const endDate =
+                        schedule.endDate ||
+                        startDate;
+
+                    if (!startDate) {
+                        return false;
+                    }
+
+                    return (
+                        cellDateStr >= startDate &&
+                        cellDateStr <= endDate
+                    );
+                });
                 dayEvents.forEach(evt => {
                     const evtEl = createElement('div', 'calendar-event');
                     
@@ -163,9 +181,24 @@ export const Calendar = {
                             prefix = '🏥';
                             break;
                         case '훈련':
-                            let scaleTxt = '';
-                            if (evt.scale === '큰훈련' || evt.scale === '큰 훈련') scaleTxt = '(대)';
-                            if (evt.scale === '작은훈련' || evt.scale === '작은 훈련') scaleTxt = '(소)';
+                            const trainingSize =
+                                evt.trainingSize ||
+                                evt.scale ||
+                                '';
+
+                            if (
+                                trainingSize === '큰 훈련' ||
+                                trainingSize === '큰훈련'
+                            ) {
+                                scaleTxt = '(대)';
+                            }
+
+                            if (
+                                trainingSize === '작은 훈련' ||
+                                trainingSize === '작은훈련'
+                            ) {
+                                scaleTxt = '(소)';
+                            }
                             prefix = `🏋️${scaleTxt}`;
                             break;
                         default:
